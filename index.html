@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Chuva de Letras - Nuvem Gigante</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="chuvaCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('chuvaCanvas');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const letras = [];
+const respingos = [];
+
+let centroX = canvas.width / 2;
+let centroY = 150; // Um pouco mais para baixo para acomodar o tamanho
+const larguraNuvem = 450; // Aumentado para cobrir a nova nuvem
+
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+class Letra {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        // As letras agora caem de uma área maior
+        this.x = (centroX - larguraNuvem / 2.5) + Math.random() * (larguraNuvem * 0.8);
+        this.y = centroY + 20;
+        this.velocidade = 3 + Math.random() * 4;
+        this.char = chars[Math.floor(Math.random() * chars.length)];
+        this.tamanho = 14 + Math.random() * 10;
+        this.opacidade = 0.3 + Math.random() * 0.7;
+    }
+
+    desenhar() {
+        ctx.fillStyle = `rgba(180, 200, 255, ${this.opacidade})`;
+        ctx.font = `${this.tamanho}px monospace`;
+        ctx.fillText(this.char, this.x, this.y);
+    }
+
+    atualizar() {
+        this.y += this.velocidade;
+
+        if (this.y > canvas.height - 5) {
+            criarRespingo(this.x, canvas.height - 5, this.char);
+            this.init();
+        }
+
+        this.desenhar();
+    }
+}
+
+class Respingo {
+    constructor(x, y, char) {
+        this.x = x;
+        this.y = y;
+        this.char = char;
+        this.vx = (Math.random() - 0.5) * 3;
+        this.vy = -Math.random() * 3;
+        this.vida = 20 + Math.random() * 10;
+        this.tamanho = 8;
+    }
+
+    atualizar() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.2;
+        this.vida--;
+
+        ctx.fillStyle = "rgba(180,200,255,0.7)";
+        ctx.font = `${this.tamanho}px monospace`;
+        ctx.fillText(this.char, this.x, this.y);
+    }
+}
+
+function criarRespingo(x, y, char) {
+    for (let i = 0; i < 4; i++) {
+        respingos.push(new Respingo(x, y, char));
+    }
+}
+
+for (let i = 0; i < 120; i++) {
+    letras.push(new Letra());
+}
+
+function desenharNuvem() {
+    ctx.save();
+   
+    // Adiciona o desfoque (Blur)
+    ctx.filter = 'blur(12px)';
+   
+    ctx.shadowColor = "rgba(0,0,0,0.1)";
+    ctx.shadowBlur = 30;
+
+    function bolha(x, y, r) {
+        const grad = ctx.createRadialGradient(
+            x - r * 0.3, y - r * 0.3, r * 0.2,
+            x, y, r
+        );
+
+        grad.addColorStop(0, "rgba(255,255,255,0.9)");
+        grad.addColorStop(0.5, "rgba(240,240,245,0.85)");
+        grad.addColorStop(1, "rgba(200,200,210,0.7)");
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Proporções aumentadas para uma nuvem maior
+    bolha(centroX, centroY, 90);
+    bolha(centroX - 110, centroY + 10, 75);
+    bolha(centroX + 110, centroY + 10, 75);
+    bolha(centroX - 60, centroY - 60, 80);
+    bolha(centroX + 60, centroY - 60, 80);
+    bolha(centroX, centroY - 40, 85);
+    bolha(centroX - 160, centroY + 20, 50); // Bolha extra lateral
+    bolha(centroX + 160, centroY + 20, 50); // Bolha extra lateral
+
+    ctx.restore();
+}
+
+function animar() {
+    // Limpa o canvas mantendo o rastro das letras
+    ctx.fillStyle = 'rgba(26, 26, 46, 0.3)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    desenharNuvem();
+
+    letras.forEach(l => l.atualizar());
+
+    for (let i = respingos.length - 1; i >= 0; i--) {
+        respingos[i].atualizar();
+        if (respingos[i].vida <= 0) {
+            respingos.splice(i, 1);
+        }
+    }
+
+    requestAnimationFrame(animar);
+}
+
+animar();
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    centroX = canvas.width / 2;
+});
+</script>
+
+</body>
+</html>
